@@ -8,14 +8,13 @@ from agno.utils.log import logger
 try:
     from google.cloud import firestore
     from google.cloud.firestore import Client
-    from google.cloud.firestore import CollectionReference
+    from google.cloud.firestore import CollectionReference, DocumentReference
     from google.cloud.firestore_v1.base_query import FieldFilter, BaseQuery
     import google.auth
 except ImportError:
     raise ImportError(
         "`firestore` not installed. Please install it with `pip install google-cloud-firestore`"
     )
-
 
 
 class FirestoreMemoryDb(MemoryDb):
@@ -34,7 +33,7 @@ class FirestoreMemoryDb(MemoryDb):
 
         Args:
             collection_name: The name of the collection to store memories
-            db_name: Name of the firestore database (None by default to use the free tier/default database)
+            db_name: Name of the firestore database (Default is to use (default) for the free tier/default database)
             client: Optional existing firestore client
             project: Optional name of the GCP project to use
         """
@@ -52,6 +51,17 @@ class FirestoreMemoryDb(MemoryDb):
         # store a user id for the collection when we get one
         # for use in the delete method due to the data structure
         self._user_id = None
+
+    # utilities to recursively delete all documents in a collection and the collection itself
+    def _delete_document(self, document: DocumentReference):
+        logger.debug(f"Deleting document: {document.path}")
+        for collection in document.collections():
+            self._delete_collection(collection)
+        document.delete()
+
+    def _delete_collection(self, collection: CollectionReference):
+        for document in collection.list_documents():
+            self._delete_document(document)
 
     def create(self) -> None:
         """Create the collection index
@@ -195,13 +205,16 @@ class FirestoreMemoryDb(MemoryDb):
 
     def drop_table(self) -> None:
         """Drop the collection
+
         Returns:
             None
         """
+        # Caveats https://firebase.google.com/docs/firestore/solutions/delete-collections
+        # We can delete all docs
+
         try:
-            # todo https://firebase.google.com/docs/firestore/solutions/delete-collections
-            # no easy way
-            logger.info("call to drop table")
+            self._delete_collection(self.collection)
+
         except Exception as e:
             logger.error(f"Error dropping collection: {e}")
 
@@ -219,9 +232,8 @@ class FirestoreMemoryDb(MemoryDb):
             bool: True if the collection was cleared, False otherwise
         """
         try:
-            # todo https://firebase.google.com/docs/firestore/solutions/delete-collections
-            logger.info("call to clear the collection")
+            self._delete_collection(self.collection)
+
             return True
         except Exception as e:
-            logger.error(f"Error clearing collection: {e}")
-            return False
+            logger.error(f"Error dropping collection: {e}")
