@@ -2,6 +2,10 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import UUID
 
+from agno.storage.agent.base import AgentStorage
+from agno.storage.agent.session import AgentSession
+from agno.utils.log import logger
+
 try:
     from google.cloud import firestore
     from google.cloud.firestore import Client
@@ -13,9 +17,6 @@ except ImportError:
         "`firestore` not installed. Please install it with `pip install google-cloud-firestore`"
     )
 
-from agno.storage.agent.base import AgentStorage
-from agno.storage.agent.session import AgentSession
-from agno.utils.log import logger
 
 
 class FirestoreAgentStorage(AgentStorage):
