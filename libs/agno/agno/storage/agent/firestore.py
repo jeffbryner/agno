@@ -18,7 +18,6 @@ except ImportError:
     )
 
 
-
 class FirestoreAgentStorage(AgentStorage):
     def __init__(
         self,
@@ -32,6 +31,7 @@ class FirestoreAgentStorage(AgentStorage):
 
         Args:
             collection_name: Name of the collection to store agent sessions
+            db_name: Firestore database name (uses free tier (default) if not specified)
             project_id: Google Cloud project ID
             client: Optional existing Firestore client
         """
@@ -45,7 +45,7 @@ class FirestoreAgentStorage(AgentStorage):
         )
 
     def create(self) -> None:
-        """Create necessary indexes for the collection"""
+        """Create necessary indexes for the collection. Not needed for Firestore."""
         try:
             logger.info(
                 f"Unnecessary call to create index for  '{self.collection_name}'"
@@ -57,7 +57,13 @@ class FirestoreAgentStorage(AgentStorage):
     def read(
         self, session_id: str, user_id: Optional[str] = None
     ) -> Optional[AgentSession]:
-        """Read an agent session from Firestore"""
+        """Read an agent session from Firestore
+        Args:
+            session_id: ID of the session to read
+            user_id: ID of the user associated with the session (optional)
+        Returns:
+            AgentSession object if found, None otherwise
+        """
         try:
             query = self.collection.where(
                 filter=FieldFilter("session_id", "==", session_id)
@@ -76,7 +82,13 @@ class FirestoreAgentStorage(AgentStorage):
     def get_all_session_ids(
         self, user_id: Optional[str] = None, agent_id: Optional[str] = None
     ) -> List[str]:
-        """Get all session IDs matching the criteria"""
+        """Get all session IDs matching the criteria
+        Args:
+            user_id: ID of the user associated with the session (optional)
+            agent_id: ID of the agent associated with the session (optional)
+        Returns:
+            List of session IDs
+        """
         try:
             query = self.collection
             if user_id:
@@ -128,7 +140,13 @@ class FirestoreAgentStorage(AgentStorage):
     def upsert(
         self, session: AgentSession, create_and_retry: bool = True
     ) -> Optional[AgentSession]:
-        """Upsert an agent session"""
+        """Upsert an agent session
+        Args:
+            session: AgentSession object to upsert
+            create_and_retry: If True, create the session if it doesn't exist
+        Returns:
+            AgentSession object if successful, None otherwise
+        """
         try:
             session_dict = session.to_dict()
             now = datetime.now(timezone.utc)
@@ -154,7 +172,10 @@ class FirestoreAgentStorage(AgentStorage):
             return None
 
     def delete_session(self, session_id: Optional[str] = None) -> None:
-        """Delete an agent session"""
+        """Delete an agent session
+        Args:
+            session_id: ID of the session to delete
+        """
         if session_id is None:
             logger.warning("No session_id provided for deletion")
             return
