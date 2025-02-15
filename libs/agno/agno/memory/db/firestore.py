@@ -1,6 +1,10 @@
 from typing import Optional, List
 from datetime import datetime, timezone
 
+from agno.memory.db import MemoryDb
+from agno.memory.row import MemoryRow
+from agno.utils.log import logger
+
 try:
     from google.cloud import firestore
     from google.cloud.firestore import Client
@@ -12,9 +16,6 @@ except ImportError:
         "`firestore` not installed. Please install it with `pip install google-cloud-firestore`"
     )
 
-from agno.memory.db import MemoryDb
-from agno.memory.row import MemoryRow
-from agno.utils.log import logger
 
 
 class FirestoreMemoryDb(MemoryDb):
