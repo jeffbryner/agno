@@ -9,8 +9,8 @@ from agno.utils.log import logger
 try:
     from google.cloud import firestore
     from google.cloud.firestore import Client
-    from google.cloud.firestore import CollectionReference
-    from google.cloud.firestore_v1.base_query import FieldFilter, BaseQuery
+    from google.cloud.firestore import CollectionReference, DocumentReference
+    from google.cloud.firestore_v1.base_query import FieldFilter
 
 except ImportError:
     raise ImportError(
@@ -43,6 +43,17 @@ class FirestoreAgentStorage(AgentStorage):
         self.collection: CollectionReference = self._client.collection(
             self.collection_name
         )
+
+    # utilities to recursively delete all documents in a collection and the collection itself
+    def _delete_document(self, document: DocumentReference):
+        logger.debug(f"Deleting document: {document.path}")
+        for collection in document.collections():
+            self._delete_collection(collection)
+        document.delete()
+
+    def _delete_collection(self, collection: CollectionReference):
+        for document in collection.list_documents():
+            self._delete_document(document)
 
     def create(self) -> None:
         """Create necessary indexes for the collection. Not needed for Firestore."""
@@ -187,11 +198,9 @@ class FirestoreAgentStorage(AgentStorage):
             logger.error(f"Error deleting session: {e}")
 
     def drop(self) -> None:
-        """Delete all documents in the collection"""
+        """Delete all documents in the collection, dropping the collection"""
         try:
-            docs = self.collection.get()
-            for doc in docs:
-                doc.reference.delete()
+            self._delete_collection(self.collection)
         except Exception as e:
             logger.error(f"Error dropping collection: {e}")
 
