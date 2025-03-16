@@ -1,13 +1,14 @@
 """
 This recipe shows how to store agent sessions in a Firestore database.
 Steps:
-1. Run: `pip install openai google-cloud-firestore agno` to install dependencies
-2. Make sure your gcloud project is set up and you have the necessary permissions to access Firestore
-3. Run: `python cookbook/storage/firestore_storage.py` to run the agent
+1. Ensure your gcloud project is enabled with Firestore. Reference https://cloud.google.com/firestore/docs/create-database-server-client-library ?
+2. Run: `pip install openai google-cloud-firestore agno` to install dependencies
+3. Make sure your gcloud project is set up and you have the necessary permissions to access Firestore
+4. Run: `python cookbook/storage/firestore_storage.py` to run the agent
 """
 
 from agno.agent import Agent
-from agno.storage.agent.firestore import FirestoreAgentStorage
+from agno.storage.firestore import FirestoreStorage
 from agno.tools.duckduckgo import DuckDuckGoTools
 
 # The only required argument is the collection name.
@@ -17,7 +18,7 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 
 
 agent = Agent(
-    storage=FirestoreAgentStorage(
+    storage=FirestoreStorage(
         collection_name="agent_sessions",
     ),
     tools=[DuckDuckGoTools()],
