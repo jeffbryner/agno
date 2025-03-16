@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Literal, Optional
 from uuid import UUID
 
-from agno.storage.agent.base import AgentStorage
-from agno.storage.agent.session import AgentSession
+from agno.storage.base import Storage
+from agno.storage.session import Session
+from agno.storage.session.agent import AgentSession
+from agno.storage.session.workflow import WorkflowSession
 from agno.utils.log import logger
 
 try:
@@ -18,13 +20,14 @@ except ImportError:
     )
 
 
-class FirestoreAgentStorage(AgentStorage):
+class FirestoreStorage(Storage):
     def __init__(
         self,
         collection_name: str,
         db_name: Optional[str] = "(default)",
         project_id: Optional[str] = None,
         client: Optional[Client] = None,
+        mode: Optional[Literal["agent", "workflow"]] = "agent",
     ):
         """
         This class provides agent storage using Firestore.
@@ -35,6 +38,7 @@ class FirestoreAgentStorage(AgentStorage):
             project_id: Google Cloud project ID
             client: Optional existing Firestore client
         """
+        super().__init__(mode)
         self._client: Optional[Client] = client
         if self._client is None:
             self._client = firestore.Client(database=db_name, project=project_id)
@@ -65,15 +69,13 @@ class FirestoreAgentStorage(AgentStorage):
             logger.error(f"Error creating indexes for collection: {e}")
             raise
 
-    def read(
-        self, session_id: str, user_id: Optional[str] = None
-    ) -> Optional[AgentSession]:
-        """Read an agent session from Firestore
+    def read(self, session_id: str, user_id: Optional[str] = None) -> Optional[Session]:
+        """Read an session from Firestore
         Args:
             session_id: ID of the session to read
             user_id: ID of the user associated with the session (optional)
         Returns:
-            AgentSession object if found, None otherwise
+            Session object if found, None otherwise
         """
         try:
             query = self.collection.where(
@@ -84,19 +86,23 @@ class FirestoreAgentStorage(AgentStorage):
 
             docs = query.get()
             for doc in docs:
-                return AgentSession.from_dict(doc.to_dict())
+                # return AgentSession.from_dict(doc.to_dict())
+                if self.mode == "agent":
+                    return AgentSession.from_dict(doc.to_dict())
+                elif self.mode == "workflow":
+                    return WorkflowSession.from_dict(doc.to_dict())
             return None
         except Exception as e:
             logger.error(f"Error reading session: {e}")
             return None
 
     def get_all_session_ids(
-        self, user_id: Optional[str] = None, agent_id: Optional[str] = None
+        self, user_id: Optional[str] = None, entity_id: Optional[str] = None
     ) -> List[str]:
         """Get all session IDs matching the criteria
         Args:
             user_id: ID of the user associated with the session (optional)
-            agent_id: ID of the agent associated with the session (optional)
+            entity_id: ID of the agent / workflow to read
         Returns:
             List of session IDs
         """
@@ -104,8 +110,13 @@ class FirestoreAgentStorage(AgentStorage):
             query = self.collection
             if user_id:
                 query = query.where(filter=FieldFilter("user_id", "==", user_id))
-            if agent_id:
-                query = query.where(filter=FieldFilter("agent_id", "==", agent_id))
+            if entity_id is not None:
+                if self.mode == "agent":
+                    query = query.where(filter=FieldFilter("agent_id", "==", entity_id))
+                elif self.mode == "workflow":
+                    query = query.where(
+                        filter=FieldFilter("workflow_id", "==", entity_id)
+                    )
 
             docs = query.get()
             # Sort in memory using Python's sorted function
@@ -138,11 +149,14 @@ class FirestoreAgentStorage(AgentStorage):
             # Sort in memory using Python's sorted function
             sorted_docs = sorted(docs, key=lambda x: x.get("created_at"), reverse=True)
             for doc in sorted_docs:
-                # Remove _id before converting to AgentSession?
-                # doc.pop("_id", None)
-                _agent_session = AgentSession.from_dict(doc)
-                if _agent_session is not None:
-                    sessions.append(_agent_session)
+                if self.mode == "agent":
+                    _agent_session = AgentSession.from_dict(doc.to_dict())
+                    if _agent_session is not None:
+                        sessions.append(_agent_session)
+                elif self.mode == "workflow":
+                    _workflow_session = WorkflowSession.from_dict(doc.to_dict())
+                    if _workflow_session is not None:
+                        sessions.append(_workflow_session)
             return sessions
         except Exception as e:
             logger.error(f"Error getting sessions: {e}")
@@ -153,10 +167,10 @@ class FirestoreAgentStorage(AgentStorage):
     ) -> Optional[AgentSession]:
         """Upsert an agent session
         Args:
-            session: AgentSession object to upsert
+            session: Session object to upsert
             create_and_retry: If True, create the session if it doesn't exist
         Returns:
-            AgentSession object if successful, None otherwise
+            Session object if successful, None otherwise
         """
         try:
             session_dict = session.to_dict()
