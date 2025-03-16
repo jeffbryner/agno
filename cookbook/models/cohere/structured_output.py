@@ -26,14 +26,12 @@ class MovieScript(BaseModel):
 
 
 json_mode_agent = Agent(
-    model=Cohere(id="command-r-08-2024"),
+    model=Cohere(id="command-a-03-2025"),
     description="You help people write movie scripts.",
     response_model=MovieScript,
     # debug_mode=True,
 )
 
 # Get the response in a variable
-# json_mode_response: RunResponse = json_mode_agent.run("New York")
-# pprint(json_mode_response.content)
-
-json_mode_agent.print_response("New York")
+json_mode_response: RunResponse = json_mode_agent.run("New York")
+pprint(json_mode_response.content)

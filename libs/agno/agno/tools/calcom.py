@@ -36,7 +36,10 @@ class CalComTools(Toolkit):
         # Get credentials from environment if not provided
         self.api_key = api_key or getenv("CALCOM_API_KEY")
         event_type_str = getenv("CALCOM_EVENT_TYPE_ID")
-        self.event_type_id = event_type_id or int(event_type_str) if event_type_str is not None else 0
+        if event_type_id is not None:
+            self.event_type_id = int(event_type_id)
+        else:
+            self.event_type_id = int(event_type_str) if event_type_str is not None else 0
 
         if not self.api_key:
             logger.error("CALCOM_API_KEY not set. Please set the CALCOM_API_KEY environment variable.")
@@ -111,7 +114,7 @@ class CalComTools(Toolkit):
                 "eventTypeId": str(self.event_type_id),
             }
 
-            response = requests.get(url, headers=self._get_headers(), params=querystring)
+            response = requests.get(url, headers=self._get_headers(), params=querystring)  # type: ignore
             if response.status_code == 200:
                 slots = response.json()["data"]["slots"]
                 available_slots = []
@@ -160,18 +163,20 @@ class CalComTools(Toolkit):
             logger.error(f"Error creating booking: {e}")
             return f"Error: {str(e)}"
 
-    def get_upcoming_bookings(self, email: str) -> str:
+    def get_upcoming_bookings(self, email: Optional[str] = None) -> str:
         """Get all upcoming bookings for an attendee.
 
         Args:
-            email: Attendee's email
+            email (str): Attendee's email [Optional]
 
         Returns:
             str: List of upcoming bookings or error message
         """
         try:
             url = "https://api.cal.com/v2/bookings"
-            querystring = {"status": "upcoming", "attendeeEmail": email}
+            querystring = {"status": "upcoming"}
+            if email:
+                querystring["attendeeEmail"] = email
 
             response = requests.get(url, headers=self._get_headers(), params=querystring)
             if response.status_code == 200:

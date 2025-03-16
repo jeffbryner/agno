@@ -2,7 +2,7 @@ from typing import Any, Dict, List, Optional
 
 import streamlit as st
 from agentic_rag import get_agentic_rag_agent
-from agno.agent.agent import Agent
+from agno.agent import Agent
 from agno.utils.log import logger
 
 
@@ -137,6 +137,7 @@ def session_selector_widget(agent: Agent, model_id: str) -> None:
                 session_id=selected_session_id,
             )
             st.rerun()
+
 
 def about_widget() -> None:
     """Display an about section in the sidebar"""

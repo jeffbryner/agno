@@ -1,6 +1,6 @@
 [project]
 name = "agno"
-version = "1.0.3"
+version = "1.1.13"
 description = "Agno: a lightweight framework for building multi-modal Agents"
 requires-python = ">=3.7,<4"
 readme = "README.md"
@@ -39,17 +39,18 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["mypy", "pytest", "ruff", "timeout-decorator", "types-pyyaml", "fastapi", "uvicorn"]
+dev = ["mypy", "pytest", "pytest-asyncio", "pytest-cov", "ruff", "timeout-decorator", "types-pyyaml", "fastapi", "uvicorn"]
 
 # Dependencies for Models
 anthropic = ["anthropic"]
 cohere = ["cohere"]
-google = ["google-generativeai"]
+google = ["google-genai"]
 groq = ["groq"]
 mistral = ["mistralai"]
 openai = ["openai"]
 ollama = ["ollama"]
-
+ibm = ["ibm-watsonx-ai"]
+lmstudio = ["lmstudio"]
 # Dependencies for Tools
 exa = ["exa_py"]
 yfinance = ["yfinance"]
@@ -58,25 +59,45 @@ duckdb = ["duckdb"]
 newspaper = ["newspaper4k", "lxml_html_clean"]
 youtube = ["youtube_transcript_api"]
 firecrawl = ["firecrawl-py"]
+github = ["PyGithub"]
+gmail = ["google-api-python-client", "google-auth-httplib2", "google-auth-oauthlib"]
+googlemaps = ["googlemaps", "google-maps-places"]
+todoist = ["todoist-api-python"]
+elevenlabs = ["elevenlabs"]
+fal = ["fal_client"]
+webex = ["webexpythonsdk"]
+mcp = ["mcp"]
+browserbase = ["browserbase", "playwright"]
 
 # Dependencies for Storage
 sql = ["sqlalchemy"]
-postgres = ["psycopg-binary"]
+postgres = ["psycopg-binary", "psycopg"]
+sqlite = ["sqlalchemy"]
 
 # Dependencies for Vector databases
 pgvector = ["pgvector"]
 chromadb = ["chromadb"]
-lancedb = ["lancedb", "tantivy"]
+lancedb = ["lancedb==0.20.0", "tantivy"]
 qdrant = ["qdrant-client"]
+cassandra = ["cassio"]
+mongodb = ["pymongo[srv]"]
+singlestore = ["sqlalchemy"]
 
 # Dependencies for Knowledge
-pdf = ["pypdf"]
+pdf = ["pypdf", "rapidocr_onnxruntime"]
+docx = ["python-docx"]
 
 # Dependencies for Performance
 performance = ["memory_profiler"]
 
 # Dependencies for Running cookbook
 cookbooks = ["inquirer", "email_validator"]
+
+# Dependencies for Docker
+docker = ["agno-docker"]
+
+# Dependencies for AWS
+aws = ["agno-aws", "agno-docker"]
 
 # All models
 models = [
@@ -87,23 +108,34 @@ models = [
   "agno[mistral]",
   "agno[ollama]",
   "agno[openai]",
+  "agno[ibm]"
 ]
 
 # All tools
 tools = [
   "agno[exa]",
-  "agno[yfinance]",
   "agno[ddg]",
   "agno[duckdb]",
   "agno[newspaper]",
   "agno[youtube]",
   "agno[firecrawl]",
+  "agno[github]",
+  "agno[gmail]",
+  "agno[googlemaps]",
+  "agno[todoist]",
+  "agno[elevenlabs]",
+  "agno[fal]",
+  "agno[webex]",
+  "agno[mcp]",
+  "agno[browserbase]",
+  "agno[yfinance]",
 ]
 
 # All storage
 storage = [
   "agno[sql]",
   "agno[postgres]",
+  "agno[sqlite]",
 ]
 
 # All vector databases
@@ -112,11 +144,15 @@ vectordbs = [
   "agno[chromadb]",
   "agno[lancedb]",
   "agno[qdrant]",
+  "agno[cassandra]",
+  "agno[mongodb]",
+  "agno[singlestore]"
 ]
 
 # All knowledge
 knowledge = [
   "agno[pdf]",
+  "agno[docx]",
 ]
 
 # All libraries for testing
@@ -129,7 +165,8 @@ tests = [
     "agno[knowledge]",
     "agno[performance]",
     "agno[cookbooks]",
-    "twine", "build"
+    "twine",
+    "build",
 ]
 
 [project.scripts]
@@ -154,6 +191,8 @@ include = ["LICENSE"]
 [tool.pytest.ini_options]
 log_cli = true
 testpaths = "tests"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 
 [tool.ruff]
 line-length = 120
@@ -171,14 +210,19 @@ exclude = ["tests*"]
 
 [[tool.mypy.overrides]]
 module = [
+  "agentql.*",
   "altair.*",
   "anthropic.*",
   "apify_client.*",
   "arxiv.*",
   "atlassian.*",
+  "azure.ai.inference.*",
+  "azure.core.*",
   "boto3.*",
   "botocore.*",
   "bs4.*",
+  "bson.*",
+  "browserbase.*",
   "cassio.*",
   "chonkie.*",
   "chromadb.*",
@@ -196,9 +240,14 @@ module = [
   "firecrawl.*",
   "github.*",
   "google.*",
+  "googlemaps.*",
+  "google_maps_places.*",
+  "google_auth_oauthlib.*",
+  "googleapiclient.*",
   "googlesearch.*",
   "groq.*",
   "huggingface_hub.*",
+  "ibm_watsonx_ai.*",
   "imghdr.*",
   "jira.*",
   "kubernetes.*",
@@ -207,6 +256,7 @@ module = [
   "langchain.*",
   "llama_index.*",
   "mem0.*",
+  "mcp.*",
   "memory_profiler.*",
   "mistralai.*",
   "mlx_whisper.*",
@@ -221,6 +271,7 @@ module = [
   "PIL.*",
   "pinecone_text.*",
   "pinecone.*",
+  "playwright.sync_api.*",
   "psycopg.*",
   "psycopg2.*",
   "pyarrow.*",
@@ -247,12 +298,16 @@ module = [
   "textract.*",
   "timeout_decorator.*",
   "torch.*",
+  "todoist_api_python.*",
   "tweepy.*",
   "twilio.*",
   "tzlocal.*",
+  "upstash_vector.*",
   "uvicorn.*",
   "vertexai.*",
   "voyageai.*",
+  "weaviate.*",
+  "webexpythonsdk.*",
   "wikipedia.*",
   "yfinance.*",
   "youtube_transcript_api.*",

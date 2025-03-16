@@ -15,6 +15,7 @@
 # Machine specific
 .idea
 .vscode
+*.code-workspace
 
 # Ignore .env files
 .env
@@ -22,6 +23,7 @@
 # Ignore .envrc files (used by direnv: https://direnv.net/)
 .envrc
 
+certs/
 
 # ignore storage dir
 /storage
@@ -53,3 +55,12 @@ data.db
 audio_generations
 
 *.db
+
+# Google OAuth token
+token.json
+
+.composio.lock
+
+# Coverage
+coverage_report
+.coverage
